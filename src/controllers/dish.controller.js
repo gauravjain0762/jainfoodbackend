@@ -47,8 +47,18 @@ const listDishes = asyncHandler(async (req, res) => {
   if (category) filter.category = category;
   if (section) filter.sections = section;
   if (isJain !== undefined) filter.isJain = isJain === "true";
-  if (available !== undefined) filter.available = available === "true";
   if (search) filter.$text = { $search: search };
+
+  // Default (no "available" param) hides inactive dishes — that's the public
+  // menu view. Admin passes ?available=false to find inactive ones, or
+  // ?available=all to manage the full list including inactive dishes.
+  if (available === "all") {
+    // no filter — everything
+  } else if (available !== undefined) {
+    filter.available = available === "true";
+  } else {
+    filter.available = true;
+  }
 
   const pageNum = Math.max(Number(page) || 1, 1);
   const limitNum = Math.min(Math.max(Number(limit) || 20, 1), 100);
