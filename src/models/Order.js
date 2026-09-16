@@ -1,26 +1,12 @@
 const mongoose = require("mongoose");
-const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants");
 
 const orderItemSchema = new mongoose.Schema(
   {
-    menuItem: { type: mongoose.Schema.Types.ObjectId, ref: "MenuItem", required: true },
+    dishId: { type: String, required: true }, // Dish slug
     name: { type: String, required: true }, // snapshot at order time
-    price: { type: Number, required: true }, // snapshot at order time
-    quantity: { type: Number, required: true, min: 1 },
-    selectedCustomizations: [
-      {
-        name: String,
-        options: [String],
-      },
-    ],
-  },
-  { _id: false }
-);
-
-const statusHistorySchema = new mongoose.Schema(
-  {
-    status: { type: String, enum: Object.values(ORDER_STATUS), required: true },
-    timestamp: { type: Date, default: Date.now },
+    qty: { type: Number, required: true, min: 1 },
+    unitPrice: { type: Number, required: true, min: 0 }, // live price at order time
+    lineTotal: { type: Number, required: true, min: 0 },
   },
   { _id: false }
 );
@@ -28,46 +14,44 @@ const statusHistorySchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, unique: true },
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    restaurant: { type: mongoose.Schema.Types.ObjectId, ref: "Restaurant", required: true },
-    deliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    customerName: { type: String, required: true, trim: true },
+    mobile: { type: String, required: true, trim: true },
+    deliveryAddress: { type: String, required: true, trim: true },
+    members: { type: Number, required: true, min: 1 },
+    deliveryDate: { type: Date, required: true },
+    deliveryTime: { type: String, required: true }, // 24h "HH:mm"
+    specialRequest: { type: String, trim: true, default: "" },
     items: { type: [orderItemSchema], required: true },
-    deliveryAddress: {
-      addressLine1: String,
-      addressLine2: String,
-      city: String,
-      state: String,
-      postalCode: String,
-      location: {
-        type: { type: String, enum: ["Point"], default: "Point" },
-        coordinates: { type: [Number], default: [0, 0] },
-      },
-    },
-    itemsTotal: { type: Number, required: true },
-    deliveryFee: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    grandTotal: { type: Number, required: true },
-    paymentMethod: { type: String, enum: Object.values(PAYMENT_METHOD), required: true },
-    paymentStatus: {
-      type: String,
-      enum: Object.values(PAYMENT_STATUS),
-      default: PAYMENT_STATUS.PENDING,
-    },
+    subtotal: { type: Number, required: true, min: 0 }, // server-calculated, source of truth
+    submittedSubtotal: { type: Number, required: true, min: 0 }, // what the frontend displayed
+    priceMismatch: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: Object.values(ORDER_STATUS),
-      default: ORDER_STATUS.PENDING,
+      enum: ["pending", "confirmed", "completed", "cancelled"],
+      default: "pending",
     },
-    statusHistory: [statusHistorySchema],
-    specialInstructions: { type: String },
-    cancelledReason: { type: String },
   },
   { timestamps: true }
 );
 
-orderSchema.index({ customer: 1, createdAt: -1 });
-orderSchema.index({ restaurant: 1, status: 1 });
-orderSchema.index({ deliveryPartner: 1, status: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ status: 1 });
+
+orderSchema.methods.toPublicJSON = function toPublicJSON() {
+  return {
+    orderNumber: this.orderNumber,
+    customerName: this.customerName,
+    mobile: this.mobile,
+    deliveryAddress: this.deliveryAddress,
+    members: this.members,
+    deliveryDate: this.deliveryDate.toISOString().slice(0, 10),
+    deliveryTime: this.deliveryTime,
+    specialRequest: this.specialRequest,
+    items: this.items,
+    subtotal: this.subtotal,
+    status: this.status,
+    createdAt: this.createdAt,
+  };
+};
 
 module.exports = mongoose.model("Order", orderSchema);

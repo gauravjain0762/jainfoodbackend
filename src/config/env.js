@@ -29,5 +29,14 @@ module.exports = {
     email: process.env.ADMIN_EMAIL,
     password: process.env.ADMIN_PASSWORD,
   },
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true",
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM || "Jain Food <no-reply@jainfood.com>",
+  },
+  adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL,
   isProd: process.env.NODE_ENV === "production",
 };
