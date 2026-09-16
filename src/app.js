@@ -14,9 +14,20 @@ const { apiLimiter } = require("./middlewares/rateLimiter");
 const app = express();
 
 app.use(helmet());
+
+const allowAnyOrigin = env.clientUrls.includes("*");
+
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin(origin, callback) {
+      // No Origin header = same-origin, server-to-server, curl, mobile apps — always allow.
+      if (!origin || allowAnyOrigin || env.clientUrls.includes(origin)) {
+        return callback(null, true);
+      }
+      const err = new Error(`Origin ${origin} is not allowed by CORS`);
+      err.statusCode = 403;
+      return callback(err);
+    },
     credentials: true,
   })
 );
