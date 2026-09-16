@@ -49,7 +49,7 @@ async function sendOrderNotification(order) {
 
   try {
     await transporter.sendMail({
-      from: env.smtp.from,
+      from: `"Jain Food" <${env.email.user}>`,
       to: env.adminNotifyEmail,
       subject: `New Order Request from ${order.customerName} — ${order.orderNumber}`,
       html,

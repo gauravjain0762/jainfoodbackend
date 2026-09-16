@@ -4,15 +4,13 @@ const logger = require("../utils/logger");
 
 let transporter = null;
 
-if (env.smtp.host && env.smtp.user && env.smtp.pass) {
+if (env.email.user && env.email.pass) {
   transporter = nodemailer.createTransport({
-    host: env.smtp.host,
-    port: env.smtp.port,
-    secure: env.smtp.secure,
-    auth: { user: env.smtp.user, pass: env.smtp.pass },
+    service: "gmail",
+    auth: { user: env.email.user, pass: env.email.pass },
   });
 } else {
-  logger.warn("SMTP credentials are not set — admin order emails will not be sent");
+  logger.warn("EMAIL_USER/EMAIL_PASS are not set — admin order emails will not be sent");
 }
 
 module.exports = transporter;
